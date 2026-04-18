@@ -11,12 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Illuminate\Foundation\Configuration\Middleware $middleware) {
+    ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
+            'auth.cookie' => \App\Http\Middleware\AuthenticateFromCookie::class,
+            'role' => \App\Http\Middleware\EnsureRole::class,
+            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
         ]);
     })
-
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();
