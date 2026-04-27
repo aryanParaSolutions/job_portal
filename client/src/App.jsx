@@ -33,7 +33,7 @@ function AuthenticatedLayout({ roles }) {
 
   if (!user) return <Navigate to="/auth" />;
 
-  if (!roles?.includes(userRole)) return <Navigate to="/unauthorized" />;
+  if (!roles?.includes(userRole)) return <Navigate to={`/${userRole}`} />;
 
   return <Outlet />;
 }
