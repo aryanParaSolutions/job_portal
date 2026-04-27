@@ -2,56 +2,109 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable,HasApiTokens;
+    use HasApiTokens, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'users';
+
+    protected $primaryKey = 'id';
+
+    public $timestamps = true;
+
     protected $fillable = [
-        'full_name',
+        'role_id',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
-        'address',
-        'password',
+        'phone',
+        'password_hash',
+        'status',
+        'last_login_ip',
+        'remember_token',
+        'profile_photo',
+        'is_deleted',
+        'email_verified_at',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
-        'password',
+        'password_hash',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $appends = [
+        'full_name',
+        'role_slug',
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'is_deleted' => 'boolean',
         ];
     }
 
-    public function dog(){
-        return $this->hasMany(Dog::class);
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function refreshTokens()
+    {
+        return $this->hasMany(AuthRefreshToken::class, 'user_id');
+    }
+
+    public function getFullNameAttribute(): string
+    {
+        return trim(implode(' ', array_filter([
+            $this->first_name,
+            $this->middle_name,
+            $this->last_name,
+        ])));
+    }
+
+    public function getRoleSlugAttribute(): ?string
+    {
+        return $this->role?->slug;
+    }
+
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->role?->slug === $roleSlug;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active' && (bool) $this->is_deleted === false;
+    }
+
+    public function isBlocked(): bool
+    {
+        return $this->status === 'blocked' || (bool) $this->is_deleted === true;
+    }
+
+    public function scopeNotDeleted($query)
+    {
+        return $query->where('is_deleted', 0);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query
+            ->where('status', 'active')
+            ->where('is_deleted', 0);
     }
 }
-
-

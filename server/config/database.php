@@ -48,7 +48,7 @@ return [
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'dogwalker'),
+            'database' => env('DB_DATABASE', 'job_portal'),
             'username' => env('DB_USERNAME', 'php3'),
             'password' => env('DB_PASSWORD', 'parasight1234@#'),
             'unix_socket' => env('DB_SOCKET', ''),
