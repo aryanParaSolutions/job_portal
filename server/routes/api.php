@@ -70,6 +70,8 @@ Route::prefix('employer')->middleware(['auth.cookie', 'active', 'role:employer']
     Route::get('/applications/{application}', [EmployerApplicantController::class, 'show']);
     Route::post('/applications/{application}/shortlist', [EmployerApplicantController::class, 'shortlist']);
     Route::post('/applications/{application}/reject', [EmployerApplicantController::class, 'reject']);
+    Route::post('/applications/{application}/interview', [EmployerApplicantController::class, 'interview']);
+    Route::get('/applications/{application}/resume', [EmployerApplicantController::class, 'downloadResume']);
 });
 
 Route::prefix('candidate')->middleware(['auth.cookie', 'active', 'role:candidate'])->group(function () {

@@ -77,4 +77,9 @@ class Job extends Model
                   ->orWhereDate('application_deadline', '>=', now()->toDateString());
             });
     }
+
+    public function approvalLogs()
+{
+    return $this->hasMany(JobApprovalLog::class, 'job_id');
+}
 }

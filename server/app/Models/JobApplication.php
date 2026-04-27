@@ -57,4 +57,14 @@ class JobApplication extends Model
     {
         return $this->belongsTo(User::class, 'reviewed_by_user_id');
     }
+
+    public function interviews()
+{
+    return $this->hasMany(ApplicationInterview::class, 'job_application_id');
+}
+
+public function statusLogs()
+{
+    return $this->hasMany(ApplicationStatusLog::class, 'job_application_id');
+}
 }

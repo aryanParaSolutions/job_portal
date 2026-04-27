@@ -8,6 +8,7 @@ use App\Models\Job;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\JobApprovalLog;
 
 class EmployerJobController extends Controller
 {
@@ -122,46 +123,61 @@ class EmployerJobController extends Controller
     }
 
     public function publish(Request $request, int $jobId): JsonResponse
-    {
-        $user = $request->user();
-        $company = Company::where('owner_user_id', $user->id)->firstOrFail();
+{
+    $user = $request->user();
+    $company = Company::where('owner_user_id', $user->id)->firstOrFail();
 
-        $job = Job::where('company_id', $company->id)->findOrFail($jobId);
+    $job = Job::where('company_id', $company->id)->findOrFail($jobId);
 
-        if (! in_array($job->status, ['draft', 'rejected'], true)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Only draft or rejected jobs can be submitted for approval.',
-            ], 422);
-        }
-
-        if (! $this->companyProfileComplete($company)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Complete company profile before publishing a job.',
-            ], 422);
-        }
-
-        if ($user->status !== 'active') {
-            return response()->json([
-                'status' => false,
-                'message' => 'Only active employers can publish jobs.',
-            ], 403);
-        }
-
-        $job->update([
-            'status' => 'pending_approval',
-            'approval_status' => 'pending',
-            'rejection_reason' => null,
-            'published_at' => now(),
-        ]);
-
+    if (! in_array($job->status, ['draft', 'rejected'], true)) {
         return response()->json([
-            'status' => true,
-            'message' => 'Job submitted for approval successfully.',
-            'data' => $job->fresh(),
-        ]);
+            'status' => false,
+            'message' => 'Only draft or rejected jobs can be submitted for approval.',
+        ], 422);
     }
+
+    if (! $this->companyProfileComplete($company)) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Complete company profile before publishing a job.',
+        ], 422);
+    }
+
+    if ($user->status !== 'active') {
+        return response()->json([
+            'status' => false,
+            'message' => 'Only active employers can publish jobs.',
+        ], 403);
+    }
+
+    $oldStatus = $job->status;
+    $action = $oldStatus === 'rejected' ? 'resubmitted' : 'submitted';
+
+    $job->update([
+        'status' => 'pending_approval',
+        'approval_status' => 'pending',
+        'rejection_reason' => null,
+        'published_at' => now(),
+    ]);
+
+    JobApprovalLog::create([
+        'job_id' => $job->id,
+        'action_by_user_id' => $user->id,
+        'action' => $action,
+        'old_status' => $oldStatus,
+        'new_status' => 'pending_approval',
+        'remarks' => $action === 'resubmitted'
+            ? 'Job resubmitted for approval by employer.'
+            : 'Job submitted for approval by employer.',
+        'created_at' => now(),
+    ]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Job submitted for approval successfully.',
+        'data' => $job->fresh(),
+    ]);
+}
 
     private function makeUniqueSlug(string $title, ?int $ignoreId = null): string
     {
